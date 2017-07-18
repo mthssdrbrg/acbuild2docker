@@ -7,7 +7,7 @@ declare build_script="$1"
 function acbuild() {
   while (( $# > 0 )); do
     case "$1" in
-      write|set-group|end)
+      write|set-name|set-group|end)
         break
         ;;
       --debug)
@@ -112,7 +112,7 @@ if [[ ! -e $build_script ]]; then
 fi
 
 # shellcheck disable=SC1090
-source "$1"
+source "$build_script"
 
 dockerfile=$(mktemp)
 
