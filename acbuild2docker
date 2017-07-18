@@ -1,0 +1,131 @@
+#!/usr/bin/env bash
+
+declare -a _runs _mounts _ports _labels _environments _copys
+declare _from _set_exec _workdir _user
+declare build_script="$1"
+
+function acbuild() {
+  while (( $# > 0 )); do
+    case "$1" in
+      write|set-group|end)
+        break
+        ;;
+      --debug)
+        shift
+        ;;
+      run)
+        shift
+        if [[ $1 = "--" ]]; then
+          shift
+        fi
+        if [[ $1 != "getent" ]];then
+          _runs+=("$*")
+        fi
+        break
+        ;;
+      mount)
+        shift; shift; shift
+        _mounts+=("$*")
+        break
+        ;;
+      port)
+        shift; shift; shift
+        _ports+=("$*")
+        break
+        ;;
+      set-exec)
+        shift
+        if [[ $1 = "--" ]]; then
+          shift
+        fi
+        _set_exec="$*"
+        break
+        ;;
+      set-user)
+        _user="$2"
+        break
+        ;;
+      set-working-directory)
+        _workdir="$2"
+        break
+        ;;
+      copy-to-dir)
+        shift
+        _copys+=("$*")
+        break
+        ;;
+      label)
+        shift; shift;
+        _labels+=("$(join_by '=' "$@")")
+        break
+        ;;
+      environment)
+        shift; shift;
+        _environments+=("$*")
+        break
+        ;;
+      begin)
+        if [[ -n $2 ]]; then
+          _from=${2#docker://}
+        fi
+        break
+        ;;
+      *) echo "Unknown option: $1";
+        exit 1
+        ;;
+    esac
+  done
+}
+
+function join_by() {
+  local d=$1; shift; echo -n "$1"; shift; printf "%s" "${@/#/$d}";
+}
+
+function each-if() {
+  local keyword=$1; shift
+  local -a values=("$@")
+  if [[ -n "${values[*]}" ]]; then
+    for v in "${values[@]}"; do
+      echo "$keyword $v" >> "$dockerfile"
+    done
+    echo >> "$dockerfile"
+  fi
+}
+
+function echo-if() {
+  local keyword=$1; shift
+  local -a values=("$@")
+  if [[ -n "${values[*]}" ]]; then
+    echo "$keyword ${values[*]}" >> "$dockerfile"
+    (( ${#values[@]} == 1 )) || echo >> "$dockerfile"
+  fi
+}
+
+if [[ -z "$build_script" ]]; then
+  usage
+  exit 1
+fi
+
+if [[ ! -e $build_script ]]; then
+  >&2 echo "'$build_script' doesn't exist"
+  exit 1
+fi
+
+# shellcheck disable=SC1090
+source "$1"
+
+dockerfile=$(mktemp)
+
+echo -e "FROM $_from\n" >> "$dockerfile"
+
+echo-if "LABEL" "${_labels[@]}"
+echo-if "RUN" "$(join_by ' && ' "${_runs[@]}")" && echo >> "$dockerfile"
+each-if "ADD" "${_copys[@]}"
+each-if "VOLUME" "${_mounts[@]}"
+echo-if "EXPOSE" "${_ports[@]}"
+each-if "ENV" "${_environments[@]}"
+echo-if "USER" "$_user"
+echo-if "WORKDIR" "$_workdir" && echo >> "$dockerfile"
+echo-if "CMD" "$_set_exec"
+
+mv "$dockerfile" Dockerfile
