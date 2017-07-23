@@ -4,6 +4,11 @@ declare -a _runs _mounts _ports _labels _environments _copys
 declare _from _set_exec _workdir _user
 declare build_script="$1"
 
+function bail() {
+  >&2 echo "$*"
+  exit 1
+}
+
 function acbuild() {
   while (( $# > 0 )); do
     case "$1" in
@@ -70,8 +75,7 @@ function acbuild() {
         fi
         break
         ;;
-      *) echo "Unknown option: $1";
-        exit 1
+      *) bail "unknown option: $1"
         ;;
     esac
   done
@@ -107,16 +111,14 @@ if [[ -z $build_script ]]; then
 fi
 
 if [[ ! -e $build_script ]]; then
-  >&2 echo "'$build_script' doesn't exist"
-  exit 1
+  bail "'$build_script' doesn't exist"
 fi
 
 # shellcheck disable=SC1090
 source "$build_script"
 
 if [[ -z $_from ]]; then
-  >&2 echo "missing FROM"
-  exit 1
+  bail "missing FROM"
 fi
 
 dockerfile=$(mktemp)
