@@ -5,10 +5,25 @@ teardown() {
 }
 
 @test "no arguments prints usage instructions" {
-  skip
   run ./acbuild2docker
   [ $status -eq 1 ]
   [ $(expr "$output" : ".*Usage:") -ne 0 ]
+}
+
+@test "prints usage when given -h / --help" {
+  run ./acbuild2docker -h
+  [ $status -eq 0 ]
+  [ $(expr "$output" : ".*Usage:") -ne 0 ]
+  run ./acbuild2docker --help
+  [ $status -eq 0 ]
+  [ $(expr "$output" : ".*Usage:") -ne 0 ]
+}
+
+@test "prints version when given -v / --version" {
+  run ./acbuild2docker -v
+  [ $status -eq 0 -a "$output" = "0.1.0" ]
+  run ./acbuild2docker --version
+  [ $status -eq 0 -a "$output" = "0.1.0" ]
 }
 
 @test "exits with status code 1 if given nonexistent file" {

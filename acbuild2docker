@@ -1,8 +1,21 @@
 #!/usr/bin/env bash
 
+declare VERSION="0.1.0"
 declare -a _runs _mounts _ports _labels _environments _copys
 declare _from _set_exec _workdir _user
-declare build_script="$1"
+declare build_script
+
+function usage() {
+  cat <<HELP
+Usage: $(basename "$0") SCRIPT
+
+Convert a script using 'acbuild' to a Dockerfile.
+
+Options:
+  -h, --help                      You're looking at it
+  -v, --version                   Print version and exit
+HELP
+}
 
 function bail() {
   >&2 echo "$*"
@@ -105,14 +118,17 @@ function echo-if() {
   fi
 }
 
-if [[ -z $build_script ]]; then
-  usage
-  exit 1
-fi
-
-if [[ ! -e $build_script ]]; then
-  bail "'$build_script' doesn't exist"
-fi
+case "$1" in
+  -h|--help) usage; exit 0 ;;
+  -v|--version) echo "$VERSION"; exit 0 ;;
+  "") usage; exit 1 ;;
+  *)
+    if [[ ! -e $1 ]]; then
+      bail "'$1' doesn't exist"
+    fi
+    build_script="$1"
+    ;;
+esac
 
 # shellcheck disable=SC1090
 source "$build_script"
