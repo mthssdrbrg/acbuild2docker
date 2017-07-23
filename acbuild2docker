@@ -101,7 +101,7 @@ function echo-if() {
   fi
 }
 
-if [[ -z "$build_script" ]]; then
+if [[ -z $build_script ]]; then
   usage
   exit 1
 fi
@@ -113,6 +113,11 @@ fi
 
 # shellcheck disable=SC1090
 source "$build_script"
+
+if [[ -z $_from ]]; then
+  >&2 echo "missing FROM"
+  exit 1
+fi
 
 dockerfile=$(mktemp)
 

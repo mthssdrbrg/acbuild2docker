@@ -21,6 +21,16 @@ teardown() {
   [ "$output" = "'nonexistent' doesn't exist" ]
 }
 
+@test "exits with status code 1 if unable to find FROM instruction" {
+  run ./acbuild2docker test/fixtures/no-from.bash
+  [ $status -eq 1 ]
+}
+
+@test "writes an error message if unable to find FROM instruction" {
+  run ./acbuild2docker test/fixtures/no-from.bash
+  [ "$output" = "missing FROM" ]
+}
+
 @test "exits with status code 0" {
   run ./acbuild2docker test/fixtures/build.bash
   [ $status -eq 0 ]
