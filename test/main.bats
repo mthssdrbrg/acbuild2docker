@@ -51,26 +51,23 @@ teardown() {
   [ $status -eq 0 ]
 }
 
-@test "creates a Dockerfile" {
+@test "outputs Dockerfile instructions to stdout" {
   run ./acbuild2docker test/fixtures/build.bash
-  [ $status -eq 0 -a -f Dockerfile ]
+  [ $(expr "$output" : ".*FROM") -ne 0 ]
 }
 
 @test "adds LABEL instructions" {
   run ./acbuild2docker test/fixtures/build.bash
-  run cat Dockerfile
   [ $(expr "$output" : ".*LABEL version=latest") -ne 0 ]
 }
 
 @test "adds EXPOSE instructions" {
   run ./acbuild2docker test/fixtures/build.bash
-  run cat Dockerfile
   [ $(expr "$output" : ".*EXPOSE 8080") -ne 0 ]
 }
 
 @test "adds ENV instructions" {
   run ./acbuild2docker test/fixtures/build.bash
-  run cat Dockerfile
   [ $(expr "$output" : ".*ENV LOGNAME bats-test") -ne 0 ]
   [ $(expr "$output" : ".*ENV HOME /home/bats") -ne 0 ]
   [ $(expr "$output" : ".*ENV USER bats") -ne 0 ]
@@ -78,31 +75,28 @@ teardown() {
 
 @test "adds USER instruction" {
   run ./acbuild2docker test/fixtures/build.bash
-  run cat Dockerfile
   [ $(expr "$output" : ".*USER bats") -ne 0 ]
 }
 
 @test "adds WORKDIR instruction" {
   run ./acbuild2docker test/fixtures/build.bash
-  run cat Dockerfile
   [ $(expr "$output" : ".*WORKDIR /home/bats") -ne 0 ]
 }
 
 @test "adds VOLUME instructions" {
   run ./acbuild2docker test/fixtures/build.bash
-  run cat Dockerfile
   [ $(expr "$output" : ".*VOLUME /home/bats/.bashrc") -ne 0 ]
 }
 
 @test "adds CMD instruction" {
   run ./acbuild2docker test/fixtures/build.bash
-  run cat Dockerfile
   [ $(expr "$output" : ".*CMD /bin/bash") -ne 0 ]
 }
 
-@test "creates a valid Dockerfile" {
+@test "generates valid Dockerfile instructions" {
   run ./acbuild2docker test/fixtures/build.bash
   [ $status -eq 0 ]
+  echo "$output" > Dockerfile
   run docker build -t mthssdrbrg/bats-test .
   [ $status -eq 0 ]
   run docker run --rm -it mthssdrbrg/bats-test echo -n "hello world"

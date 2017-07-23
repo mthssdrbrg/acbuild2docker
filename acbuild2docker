@@ -9,11 +9,11 @@ function usage() {
   cat <<HELP
 Usage: $(basename "$0") SCRIPT
 
-Convert a script using 'acbuild' to a Dockerfile.
+Convert a script using 'acbuild' to Dockerfile instructions, written to standard out.
 
 Options:
-  -h, --help                      You're looking at it
-  -v, --version                   Print version and exit
+  -h, --help     You're looking at it
+  -v, --version  Print version and exit
 HELP
 }
 
@@ -103,9 +103,9 @@ function each-if() {
   local -a values=("$@")
   if [[ -n "${values[*]}" ]]; then
     for v in "${values[@]}"; do
-      echo "$keyword $v" >> "$dockerfile"
+      echo "$keyword $v"
     done
-    echo >> "$dockerfile"
+    echo
   fi
 }
 
@@ -113,8 +113,8 @@ function echo-if() {
   local keyword=$1; shift
   local -a values=("$@")
   if [[ -n "${values[*]}" ]]; then
-    echo "$keyword ${values[*]}" >> "$dockerfile"
-    (( ${#values[@]} == 1 )) || echo >> "$dockerfile"
+    echo "$keyword ${values[*]}"
+    (( ${#values[@]} == 1 )) || echo
   fi
 }
 
@@ -137,18 +137,14 @@ if [[ -z $_from ]]; then
   bail "missing FROM"
 fi
 
-dockerfile=$(mktemp)
-
-echo -e "FROM $_from\n" >> "$dockerfile"
+echo -e "FROM $_from\n"
 
 echo-if "LABEL" "${_labels[@]}"
-echo-if "RUN" "$(join_by ' && ' "${_runs[@]}")" && echo >> "$dockerfile"
+echo-if "RUN" "$(join_by ' && ' "${_runs[@]}")" && echo
 each-if "ADD" "${_copys[@]}"
 each-if "VOLUME" "${_mounts[@]}"
 echo-if "EXPOSE" "${_ports[@]}"
 each-if "ENV" "${_environments[@]}"
 echo-if "USER" "$_user"
-echo-if "WORKDIR" "$_workdir" && echo >> "$dockerfile"
+echo-if "WORKDIR" "$_workdir" && echo
 echo-if "CMD" "$_set_exec"
-
-mv "$dockerfile" Dockerfile
