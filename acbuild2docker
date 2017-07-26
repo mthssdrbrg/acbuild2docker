@@ -118,33 +118,40 @@ function echo-if() {
   fi
 }
 
-case "$1" in
-  -h|--help) usage; exit 0 ;;
-  -v|--version) echo "$VERSION"; exit 0 ;;
-  "") usage; exit 1 ;;
-  *)
-    if [[ ! -e $1 ]]; then
-      bail "'$1' doesn't exist"
-    fi
-    build_script="$1"
-    ;;
-esac
+function parse-argv() {
+  case "$1" in
+    -h|--help) usage; exit 0 ;;
+    -v|--version) echo "$VERSION"; exit 0 ;;
+    "") usage; exit 1 ;;
+    *)
+      if [[ ! -e $1 ]]; then
+        bail "'$1' doesn't exist"
+      fi
+      build_script="$1"
+      ;;
+  esac
+}
 
-# shellcheck disable=SC1090
-source "$build_script"
+function main() {
+  parse-argv "$@"
+  # shellcheck disable=SC1090
+  source "$build_script"
 
-if [[ -z $_from ]]; then
-  bail "missing FROM"
-fi
+  if [[ -z $_from ]]; then
+    bail "missing FROM"
+  fi
 
-echo -e "FROM $_from\n"
+  echo -e "FROM $_from\n"
 
-echo-if "LABEL" "${_labels[@]}"
-echo-if "RUN" "$(join_by ' && ' "${_runs[@]}")" && echo
-each-if "ADD" "${_copys[@]}"
-each-if "VOLUME" "${_mounts[@]}"
-echo-if "EXPOSE" "${_ports[@]}"
-each-if "ENV" "${_environments[@]}"
-echo-if "USER" "$_user"
-echo-if "WORKDIR" "$_workdir" && echo
-echo-if "CMD" "$_set_exec"
+  echo-if "LABEL" "${_labels[@]}"
+  echo-if "RUN" "$(join_by ' && ' "${_runs[@]}")" && echo
+  each-if "ADD" "${_copys[@]}"
+  each-if "VOLUME" "${_mounts[@]}"
+  echo-if "EXPOSE" "${_ports[@]}"
+  each-if "ENV" "${_environments[@]}"
+  echo-if "USER" "$_user"
+  echo-if "WORKDIR" "$_workdir" && echo
+  echo-if "CMD" "$_set_exec"
+}
+
+main "$@"
